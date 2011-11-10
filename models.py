@@ -1,53 +1,56 @@
 from django.db import models
-#from django.db.models import signals as model_signals
 from django.db.models.base import ModelBase
 from django.contrib.auth.models import User
 from django.conf import settings
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-#from filebrowser.models import Base
-#from filebrowser.settings import MEDIA_ROOT
 
 from gitannex.signals import receiver_subclasses
 from mmedia.models import MMedia, Audio
 
 import os
 import datetime
+import subprocess
 
-#from gitannex import signals
+gitannex_dir = settings.GITANNEX_DIR
 
-def _createRepository(repositoryName):
+def _createRepository(repositoryName, repositoryURLOrPath):
+    print 'git config --global user.name "admin"' 
     cmd = 'git config --global user.name "admin"' 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/' + repositoryName)
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
+    print 'git config --global user.email "admin@mocambos.net"' 
     cmd = 'git config --global user.email "admin@mocambos.net"' 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/' + repositoryName)
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
+    print 'git init'
     cmd = 'git init' 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/' + repositoryName)
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
-    cmd = 'git annex init' + settings.PORTAL_NAME 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/' + repositoryName)
+    print 'git annex init ' + settings.PORTAL_NAME 
+    cmd = 'git annex init ' + settings.PORTAL_NAME 
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
 # Nome del repository remoto?
-    cmd = 'git remote add baoba' + repositoryURLOrPath 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/' + repositoryName)
+    print 'git remote add baoba ' + repositoryURLOrPath 
+    cmd = 'git remote add baoba ' + repositoryURLOrPath 
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
 
 
 def _cloneRepository(repositoryURLOrPath, repositoryName):
     cmd = 'git config --global user.name "admin"' 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/')
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir))
     pipe.wait()
     cmd = 'git config --global user.email "admin@mocambos.net"' 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/')
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir))
     pipe.wait()
-    cmd = 'git clone' + repositoryURLOrPath + repositoryName  
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/')
+    cmd = 'git clone ' + repositoryURLOrPath + repositoryName  
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir))
     pipe.wait()
-    cmd = 'git annex init' + settings.PORTAL_NAME 
-    pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'gitannex/' + repositoryName)
+    cmd = 'git annex init ' + settings.PORTAL_NAME 
+    pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
 
 def _selectRepositoryByPath():
@@ -55,40 +58,37 @@ def _selectRepositoryByPath():
     return
 
 def _getAvailableFolders(path):
-    folderList = [( name , name ) for name in os.listdir(path + 'gitannex/') \
-                      if os.path.isdir(os.path.join(path + 'gitannex/', name))]
+    folderList = [( name , name ) for name in os.listdir(os.path.join(path, gitannex_dir)) \
+                      if os.path.isdir(os.path.join(path, gitannex_dir, name))]
     return folderList
 
 def gitAdd(fileName, repoDir):
-    # cmd = 'git config --global user.name "' + User.userid +'"' 
-    # pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'uploads/' + repositoryName)
-    # pipe.wait()
-    # cmd = 'git config --global user.email "' + User.email +'"'
-    # pipe = subprocess.Popen(cmd, shell=True, cwd=settings.MEDIA_ROOT + 'uploads/' + repositoryName)
-    # pipe.wait()
+    print 'git annex add ' + fileName
     cmd = 'git annex add ' + fileName
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitCommit(fileName, fileTitle, author, repoDir):
-    cmd = 'git commit --author "' + author + '" -m "' + fileTitle + '"' + fileName
+    print 'git commit --author "' + author + '" -m "' + fileTitle + '" ' + fileName
+    cmd = 'git commit --author "' + author + '" -m "' + fileTitle + '" ' + fileName
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitPush(repoDir, remoteRepo):
-    cmd = 'git push' + remoteRepo
+    print 'git push ' + remoteRepo
+    cmd = 'git push ' + remoteRepo
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitPull(repoDir):
-    cmd = 'git pull'
+    print 'git pull '
+    cmd = 'git pull '
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitStatus(fileName, repoDir):
 # Dovrebbe restituire oltre allo status un flag per avviare o no il sync
     cmd = 'git status'
-
 
 @receiver_subclasses(post_save, MMedia, "mmedia_post_save")
 def gitPostSave(instance, **kwargs):
@@ -102,11 +102,11 @@ def gitPostSave(instance, **kwargs):
     print instance.path_relative()
 
     path = instance.path_relative().split(os.sep)
-    if "gitannex" in path:
-        repositoryName = path[path.index("gitannex") + 1]
+    if gitannex_dir in path:
+        repositoryName = path[path.index(gitannex_dir) + 1]
         gitAnnexRep = GitAnnexRepository.objects.get(repositoryName__iexact=repositoryName)
-        gitAdd(instance.fileName, instance.path)
-        gitCommit(instance.fileName, instance.title, instance.user.username, instance.path)
+        gitAdd(instance.fileref.name, os.path.dirname(instance.fileref.path))
+        gitCommit(instance.fileref.name, instance.title, instance.author.username, os.path.dirname(instance.fileref.path))
 
 
 class GitAnnexRepository(models.Model):
@@ -124,13 +124,14 @@ class GitAnnexRepository(models.Model):
     enableSync = models.BooleanField()
     remoteRepositoryURLOrPath = models.CharField(max_length=200)
     
-    def createRepository():
-        _createRepository(self.repositoryURLOrPath)
+    def createRepository(self):
+        # Dovrebbe scegliere tra remoto e locale? 
+        _createRepository(self.repositoryName, self.repositoryURLOrPath)
     
-    def cloneRepository():
+    def cloneRepository(self):
         _cloneRepository(self.repositoryURLOrPath, self.repositoryName)
 
-    def syncRepository():
+    def syncRepository(self):
         if gitStatus:
             gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
             gitPull(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
@@ -144,4 +145,9 @@ class GitAnnexRepository(models.Model):
             if rep.enableSync:
                 if rep.syncStartTime >= datetime.datetime.now():
                     rep.syncRepository()
+
+    def save(self, *args, **kwargs):
+        self.createRepository()
+        super(GitAnnexRepository, self).save(*args, **kwargs)
+
 
