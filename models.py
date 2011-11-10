@@ -9,7 +9,8 @@ from django.dispatch import receiver
 #from filebrowser.models import Base
 #from filebrowser.settings import MEDIA_ROOT
 
-from mmedia.models import MMedia
+from gitannex.signals import receiver_subclasses
+from mmedia.models import MMedia, Audio
 
 import os
 import datetime
@@ -88,19 +89,24 @@ def gitStatus(fileName, repoDir):
 # Dovrebbe restituire oltre allo status un flag per avviare o no il sync
     cmd = 'git status'
 
-@receiver(post_save, sender=MMedia)
-def gitPostSave(sender, **kwargs):
+
+@receiver_subclasses(post_save, MMedia, "mmedia_post_save")
+def gitPostSave(instance, **kwargs):
     # In sender c'e' tutto.. user, filename, path
     # Salvo sul repository relativo alla cartella 
     # Bisogna organizzare i dati in cartelle ben strutturate
     # e mantenere una corrispondenza tra i GitAnnexRepository 
     # e la struttura di cartelle.
-    path = sender.path_relative().split(os.sep)
+    print instance.mediatype
+    print type(instance)
+    print instance.path_relative()
+
+    path = instance.path_relative().split(os.sep)
     if "gitannex" in path:
         repositoryName = path[path.index("gitannex") + 1]
         gitAnnexRep = GitAnnexRepository.objects.get(repositoryName__iexact=repositoryName)
-        gitAdd(sender.fileName, sender.path)
-        gitCommit(sender.fileName, sender.title, sender.user.username, sender.path)
+        gitAdd(instance.fileName, instance.path)
+        gitCommit(instance.fileName, instance.title, instance.user.username, instance.path)
 
 
 class GitAnnexRepository(models.Model):
