@@ -68,9 +68,9 @@ def gitAdd(fileName, repoDir):
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
-def gitCommit(fileName, fileTitle, author, repoDir):
-    print 'git commit --author "' + author + '" -m "' + fileTitle + '" ' + fileName
-    cmd = 'git commit --author "' + author + '" -m "' + fileTitle + '" ' + fileName
+def gitCommit(fileTitle, authorName, authorEmail, repoDir):
+    print 'git commit --author="' + authorName + ' <' + authorEmail +'>" -m "' + fileTitle + '"'
+    cmd = 'git commit --author="' + authorName + ' <' + authorEmail +'>" -m "' + fileTitle + '"'
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
@@ -105,8 +105,8 @@ def gitPostSave(instance, **kwargs):
     if gitannex_dir in path:
         repositoryName = path[path.index(gitannex_dir) + 1]
         gitAnnexRep = GitAnnexRepository.objects.get(repositoryName__iexact=repositoryName)
-        gitAdd(instance.fileref.name, os.path.dirname(instance.fileref.path))
-        gitCommit(instance.fileref.name, instance.title, instance.author.username, os.path.dirname(instance.fileref.path))
+        gitAdd(os.path.basename(instance.fileref.name), os.path.dirname(instance.fileref.path))
+        gitCommit(instance.title, instance.author.username, instance.author.email, os.path.dirname(instance.fileref.path))
 
 
 class GitAnnexRepository(models.Model):
