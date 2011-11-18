@@ -80,6 +80,12 @@ def gitPush(repoDir, remoteRepo):
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
+def gitAnnexMerge(repoDir):
+    print 'git annex merge '
+    cmd = 'git annex merge '
+    pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
+    pipe.wait()
+
 def gitPull(repoDir):
     print 'git pull '
     cmd = 'git pull '
@@ -115,6 +121,7 @@ class GitAnnexRepository(models.Model):
     # clone (via ssh). 
     
     # Nella view va messo un if che a seconda chiama create o cloneRepository a seconda della scelta.
+
     # Codice di supporto da spostare nella view
 #    filelisting = FileListing(MEDIA_ROOT, filter_func='filetype="Folder"', sorting_by=None, sorting_order=None)
 #    availableFolders = filelisting.files_listing_filtered()
@@ -133,8 +140,10 @@ class GitAnnexRepository(models.Model):
 
     def syncRepository(self):
         if gitStatus:
-            gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
             gitPull(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+            gitAnnexMerge(self.repositoryURLOrPath)
+            gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+            
             # A questo punto bisogna ricreare gli oggetti in django a partire dal log di git.
             # Per ogni add si deve creare un oggetto prendendo il nome dall descrizione del commit
             # l'autore dall'autore del commit e il tipo dal path. 
