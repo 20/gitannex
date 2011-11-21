@@ -1,7 +1,8 @@
-NPDD - Rede Mocambos
-http://wiki.mocambos.net/Nucleo_de_Pesquisa_e_Desenvolvimento_Digital
+ <==  | NPDD/Rede Mocambos 
+ ==>  | http://wiki.mocambos.net/Nucleo_de_Pesquisa_e_Desenvolvimento_Digital
+ nnn  | "Vamos fazer um mundo digital mais do nosso jeito..." 
 
-Aplicação django para gerir repositorios Git Annex. 
+Aplicação django para gerir repositorios Git Annex (git-annex.branchable.com) 
 
 Pode usar com o django mmedia:
 https://github.com/20/mmedia
