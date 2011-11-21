@@ -1,4 +1,5 @@
 import logging
+import django.dispatch
 
 def get_subclasses(classes, level=0):
     """
@@ -33,3 +34,7 @@ def receiver_subclasses(signal, sender, dispatch_uid_prefix, **kwargs):
             signal.connect(func, sender=snd, dispatch_uid=dispatch_uid_prefix+'_'+snd.__name__, **kwargs)
         return func
     return _decorator
+
+
+## Signal to all that the files are synced 
+filesync_done = django.dispatch.Signal(providing_args=["repositoryName", "repositoryDir"])

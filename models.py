@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from gitannex.signals import receiver_subclasses
+from gitannex.signals import receiver_subclasses, filesync_done
 from mmedia.models import MMedia, Audio
 
 import os
@@ -144,9 +144,12 @@ class GitAnnexRepository(models.Model):
             gitAnnexMerge(self.repositoryURLOrPath)
             gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
             
+            # Signal to all that files should be synced 
+            filesync_done.send(sender=self, repositoryName=self.repositoryName, repositoryDir=self.repositoryURLOrPath)
             # A questo punto bisogna ricreare gli oggetti in django a partire dal log di git.
             # Per ogni add si deve creare un oggetto prendendo il nome dall descrizione del commit
             # l'autore dall'autore del commit e il tipo dal path. 
+            # Serializzazione? 
 
     def runScheduledJobs():
         allRep = GitAnnexRepository.objects.all()
