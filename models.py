@@ -146,6 +146,7 @@ class GitAnnexRepository(models.Model):
             
             # Signal to all that files should be synced 
             filesync_done.send(sender=self, repositoryName=self.repositoryName, repositoryDir=self.repositoryURLOrPath)
+            
             # A questo punto bisogna ricreare gli oggetti in django a partire dal log di git.
             # Per ogni add si deve creare un oggetto prendendo il nome dall descrizione del commit
             # l'autore dall'autore del commit e il tipo dal path. 
