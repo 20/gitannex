@@ -1,6 +1,12 @@
- <==  | NPDD/Rede Mocambos 
- ==>  | http://wiki.mocambos.net/Nucleo_de_Pesquisa_e_Desenvolvimento_Digital
- nnn  | "Vamos fazer um mundo digital mais do nosso jeito..." 
+         /
+      _ V
+       \| |/__
+ <==    | /      *NPDD/Rede Mocambos*
+ ==>    |/  http://wiki.mocambos.net/Nucleo_de_Pesquisa_e_Desenvolvimento_Digital
+ nnn    |    "Vamos fazer um mundo digital mais do nosso jeito..."
+______/~~~\________________________________________________________________ _ _ _
+       /
+      GITANNEX
 
 Aplicação django para gerir repositorios Git Annex (git-annex.branchable.com) 
 
