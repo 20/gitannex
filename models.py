@@ -144,7 +144,7 @@ class GitAnnexRepository(models.Model):
             gitAnnexMerge(self.repositoryURLOrPath)
             gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
             
-            # Signal to all that files should be synced 
+            # Signal to all that files are (should be) synced 
             filesync_done.send(sender=self, repositoryName=self.repositoryName, repositoryDir=self.repositoryURLOrPath)
             
             # A questo punto bisogna ricreare gli oggetti in django a partire dal log di git.
