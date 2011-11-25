@@ -80,12 +80,6 @@ def gitPush(repoDir, remoteRepo):
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
-def gitAnnexMerge(repoDir):
-    print 'git annex merge '
-    cmd = 'git annex merge '
-    pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
-    pipe.wait()
-
 def gitPull(repoDir):
     print 'git pull '
     cmd = 'git pull '
@@ -96,13 +90,42 @@ def gitStatus(fileName, repoDir):
 # Dovrebbe restituire oltre allo status un flag per avviare o no il sync
     cmd = 'git status'
 
+def gitGetSHA(repoDir):
+    print 'git rev-parse HEAD'
+    cmd = 'git rev-parse HEAD'
+    pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
+    output,error = pipe.communicate()
+    print '>>> Revision is: ' + output
+    return output
+
+def gitAnnexMerge(repoDir):
+    print 'git annex merge '
+    cmd = 'git annex merge '
+    pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
+    pipe.wait()
+
+def gitAnnexCopyTo(repoDir, remoteRepo):
+    print 'git annex copy --to ' + remoteRepo
+    cmd = 'git annex copy --to ' + remoteRepo
+    pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
+    pipe.wait()
+
+def gitAnnexGet(repoDir):
+    print 'git annex get .'
+    cmd = 'git annex get .'
+    pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
+    pipe.wait()
+
+# Connecting to MMedia signal
 @receiver_subclasses(post_save, MMedia, "mmedia_post_save")
-def gitPostSave(instance, **kwargs):
+def gitMMediaPostSave(instance, **kwargs):
     # In sender c'e' tutto.. user, filename, path
     # Salvo sul repository relativo alla cartella 
     # Bisogna organizzare i dati in cartelle ben strutturate
     # e mantenere una corrispondenza tra i GitAnnexRepository 
     # e la struttura di cartelle.
+
+    # DEBUG 
     print instance.mediatype
     print type(instance)
     print instance.path_relative()
@@ -130,7 +153,8 @@ class GitAnnexRepository(models.Model):
     syncStartTime = models.DateField()
     enableSync = models.BooleanField()
     remoteRepositoryURLOrPath = models.CharField(max_length=200)
-    
+#    lastSyncSHA = models.CharField(max_length=100)
+
     def createRepository(self):
         # Dovrebbe scegliere tra remoto e locale? 
         _createRepository(self.repositoryName, self.repositoryURLOrPath)
@@ -139,18 +163,22 @@ class GitAnnexRepository(models.Model):
         _cloneRepository(self.repositoryURLOrPath, self.repositoryName)
 
     def syncRepository(self):
-        if gitStatus:
-            gitPull(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
-            gitAnnexMerge(self.repositoryURLOrPath)
-            gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
-            
-            # Signal to all that files are (should be) synced 
-            filesync_done.send(sender=self, repositoryName=self.repositoryName, repositoryDir=self.repositoryURLOrPath)
-            
-            # A questo punto bisogna ricreare gli oggetti in django a partire dal log di git.
-            # Per ogni add si deve creare un oggetto prendendo il nome dall descrizione del commit
-            # l'autore dall'autore del commit e il tipo dal path. 
-            # Serializzazione? 
+        gitPull(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+        gitAnnexMerge(self.repositoryURLOrPath)
+        gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+        gitAnnexCopyTo(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+        # La get qui potrebbe essere fatta per file specifici per ottimizzare l'uso della banda.. 
+        # Attualmente vengono presi tutti i file 
+        gitAnnexGet(self.repositoryURLOrPath)
+        self.lastSyncSHA = gitGetSHA(self.repositoryURLOrPath)
+        # Signal to all that files are (should be) synced 
+        filesync_done.send(sender=self, repositoryName=self.repositoryName, \
+                               repositoryDir=self.repositoryURLOrPath, lastSyncSHA = self.lastSyncSHA)
+        
+        # A questo punto bisogna ricreare gli oggetti in django a partire dal log di git.
+        # Per ogni add si deve creare un oggetto prendendo il nome dall descrizione del commit
+        # l'autore dall'autore del commit e il tipo dal path. 
+        # Serializzazione? 
 
     def runScheduledJobs():
         allRep = GitAnnexRepository.objects.all()
