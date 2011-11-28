@@ -15,7 +15,7 @@ import subprocess
 
 gitannex_dir = settings.GITANNEX_DIR
 
-def _createRepository(repositoryName, repositoryURLOrPath):
+def _createRepository(repositoryName, remoteRepositoryURLOrPath):
     print 'git config --global user.name "admin"' 
     cmd = 'git config --global user.name "admin"' 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
@@ -33,8 +33,8 @@ def _createRepository(repositoryName, repositoryURLOrPath):
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
 # Nome del repository remoto?
-    print 'git remote add baoba ' + repositoryURLOrPath 
-    cmd = 'git remote add baoba ' + repositoryURLOrPath 
+    print 'git remote add baoba ' + remoteRepositoryURLOrPath 
+    cmd = 'git remote add baoba ' + remoteRepositoryURLOrPath 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
 
@@ -74,9 +74,9 @@ def gitCommit(fileTitle, authorName, authorEmail, repoDir):
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
-def gitPush(repoDir, remoteRepo):
-    print 'git push ' + remoteRepo
-    cmd = 'git push ' + remoteRepo
+def gitPush(repoDir):
+    print 'git push '
+    cmd = 'git push '
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
@@ -104,9 +104,9 @@ def gitAnnexMerge(repoDir):
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
-def gitAnnexCopyTo(repoDir, remoteRepo):
-    print 'git annex copy --to ' + remoteRepo
-    cmd = 'git annex copy --to ' + remoteRepo
+def gitAnnexCopyTo(repoDir):
+    print 'git annex copy --to '
+    cmd = 'git annex copy --to baoba'
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
@@ -138,6 +138,14 @@ def gitMMediaPostSave(instance, **kwargs):
         gitCommit(instance.title, instance.author.username, instance.author.email, os.path.dirname(instance.fileref.path))
 
 
+def runScheduledJobs():
+    allRep = GitAnnexRepository.objects.all()
+    for rep in allRep:
+        if rep.enableSync:
+            # if rep.syncStartTime >= datetime.datetime.now():
+            rep.syncRepository()
+
+
 class GitAnnexRepository(models.Model):
     # Forse dovrei mettere qualcosa nella view. Esattamente.. Quando creo un repository questo puo' essere locale o remoto. 
     # Quindi devo poter scegliere tra una cartella locale (eventualmente crearla), o inserite un URL per effetuare il
@@ -157,16 +165,16 @@ class GitAnnexRepository(models.Model):
 
     def createRepository(self):
         # Dovrebbe scegliere tra remoto e locale? 
-        _createRepository(self.repositoryName, self.repositoryURLOrPath)
+        _createRepository(self.repositoryName, self.remoteRepositoryURLOrPath)
     
     def cloneRepository(self):
         _cloneRepository(self.repositoryURLOrPath, self.repositoryName)
 
     def syncRepository(self):
-        gitPull(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+        gitPull(self.repositoryURLOrPath)
         gitAnnexMerge(self.repositoryURLOrPath)
-        gitPush(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
-        gitAnnexCopyTo(self.repositoryURLOrPath, self.remoteReposittoryURLOrPath)
+        gitPush(self.repositoryURLOrPath)
+        gitAnnexCopyTo(self.repositoryURLOrPath)
         # La get qui potrebbe essere fatta per file specifici per ottimizzare l'uso della banda.. 
         # Attualmente vengono presi tutti i file 
         gitAnnexGet(self.repositoryURLOrPath)
@@ -179,13 +187,6 @@ class GitAnnexRepository(models.Model):
         # Per ogni add si deve creare un oggetto prendendo il nome dall descrizione del commit
         # l'autore dall'autore del commit e il tipo dal path. 
         # Serializzazione? 
-
-    def runScheduledJobs():
-        allRep = GitAnnexRepository.objects.all()
-        for rep in allRep:
-            if rep.enableSync:
-                if rep.syncStartTime >= datetime.datetime.now():
-                    rep.syncRepository()
 
     def save(self, *args, **kwargs):
         self.createRepository()
