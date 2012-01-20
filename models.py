@@ -12,28 +12,30 @@ from mmedia.models import MMedia, Audio
 import os
 import datetime
 import subprocess
+import logging
 
+logger = logging.getLogger(__name__)
 gitannex_dir = settings.GITANNEX_DIR
 
 def _createRepository(repositoryName, remoteRepositoryURLOrPath):
-    print 'git config --global user.name "admin"' # DEBUG
+    logger.info('git config --global user.name "admin"')
     cmd = 'git config --global user.name "admin"' 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
-    print 'git config --global user.email "admin@mocambos.net"' # DEBUG
+    logger.info('git config --global user.email "admin@mocambos.net"')
     cmd = 'git config --global user.email "admin@mocambos.net"' 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
-    print 'git init' # DEBUG
+    logger.info('git init')
     cmd = 'git init' 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
-    print 'git annex init ' + settings.PORTAL_NAME  # DEBUG
+    logger.info('git annex init ' + settings.PORTAL_NAME)
     cmd = 'git annex init ' + settings.PORTAL_NAME 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
     # TODO: Manage repositories dinamically 
-    print 'git remote add baoba ' + remoteRepositoryURLOrPath  # DEBUG
+    logger.info('git remote add baoba ' + remoteRepositoryURLOrPath)
     cmd = 'git remote add baoba ' + remoteRepositoryURLOrPath 
     pipe = subprocess.Popen(cmd, shell=True, cwd=os.path.join(settings.MEDIA_ROOT, gitannex_dir, repositoryName))
     pipe.wait()
@@ -63,19 +65,19 @@ def _getAvailableFolders(path):
     return folderList
 
 def gitCommit(fileTitle, authorName, authorEmail, repoDir):
-    print 'git commit --author="' + authorName + ' <' + authorEmail +'>" -m "' + fileTitle + '"' # DEBUG
+    logger.info('git commit --author="' + authorName + ' <' + authorEmail +'>" -m "' + fileTitle + '"')
     cmd = 'git commit --author="' + authorName + ' <' + authorEmail +'>" -m "' + fileTitle + '"'
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitPush(repoDir):
-    print 'git push ' # DEBUG
+    logger.info('git push ')
     cmd = 'git push '
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitPull(repoDir):
-    print 'git pull ' # DEBUG
+    logger.info('git pull ')
     cmd = 'git pull '
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
@@ -85,35 +87,35 @@ def gitStatus(fileName, repoDir):
     cmd = 'git status'
 
 def gitGetSHA(repoDir):
-    print 'git rev-parse HEAD' # DEBUG
+    logger.info('git rev-parse HEAD')
     cmd = 'git rev-parse HEAD'
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     output,error = pipe.communicate()
-    print '>>> Revision is: ' + output # DEBUG
+    logger.debug('>>> Revision is: ' + output)
     return output
 
 def gitAnnexAdd(fileName, repoDir):
-    print 'git annex add ' + fileName # DEBUG
+    logger.info('git annex add ' + fileName)
     cmd = 'git annex add ' + fileName
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitAnnexMerge(repoDir):
-    print 'git annex merge ' # DEBUG
+    logger.info('git annex merge ')
     cmd = 'git annex merge '
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitAnnexCopyTo(repoDir):
     # TODO: Next release with dynamic "origin" 
-    print 'git annex copy --fast --to origin '
+    logger.info('git annex copy --fast --to origin ')
     cmd = 'git annex copy --fast --to origin'
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
 
 def gitAnnexGet(repoDir):
     # TODO: Next release with possibility to choice what to get 
-    print 'git annex get .'
+    logger.info('git annex get .')
     cmd = 'git annex get .'
     pipe = subprocess.Popen(cmd, shell=True, cwd=repoDir)
     pipe.wait()
@@ -121,9 +123,9 @@ def gitAnnexGet(repoDir):
 # Connecting to MMedia signal
 @receiver_subclasses(post_save, MMedia, "mmedia_post_save")
 def gitMMediaPostSave(instance, **kwargs):
-    print instance.mediatype # DEBUG
-    print type(instance) # DEBUG
-    print instance.path_relative() # DEBUG
+    logger.debug(instance.mediatype)
+    logger.debug(type(instance))
+    logger.debug(instance.path_relative())
 
     path = instance.path_relative().split(os.sep)
     if gitannex_dir in path:
@@ -171,10 +173,10 @@ class GitAnnexRepository(models.Model):
         # TODO: Next release with selective sync since a given revision (using git SHA)
         # self.lastSyncSHA = gitGetSHA(self.repositoryURLOrPath)
         # Signal to all that files are (should be) synced 
-        print ">>> BEFORE filesync_done" # DEBUG
+        logger.debug(">>> BEFORE filesync_done")
         filesync_done.send(sender=self, repositoryName=self.repositoryName, \
                                repositoryDir=self.repositoryURLOrPath)
-        print ">>> AFTER filesync_done" # DEBUG
+        logger.debug(">>> AFTER filesync_done")
 
     def save(self, *args, **kwargs):
         self.createRepository()
